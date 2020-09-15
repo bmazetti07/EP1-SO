@@ -12,34 +12,24 @@ void type_prompt () {
 }
 
 int main (int argc, char **argv) {
-    char command[20], parameters[50];
+    char command[50], parameters[50];
+
     while (1) {
         type_prompt ();
         scanf ("%s %s", command, parameters);
 
-        if (strcmp (command, "mkdir") == 0) {
-            printf ("Chamada do mkdir\n");
-            printf ("parametro: %s\n", parameters);
-
-            if (mkdir(parameters, 0777) == 0)
-                printf("Success\n");
-        }
+        if (strcmp (command, "mkdir") == 0)
+            mkdir (parameters, 0777);
 
         else if (strcmp (command, "kill") == 0) {
             pid_t pid;
-            printf ("Chamada do kill\n");
             scanf ("%d", &pid);
-            printf ("parametro: %d\n", pid);
 
             kill (pid, SIGKILL);
-
-            printf ("processo: %d morto\n", pid);
         }
 
         else if (strcmp (command, "ln") == 0) {
             char file[20], shortcut[20];
-            printf ("Chamada do ln\n");
-
             scanf ("%s %s", file, shortcut);
 
             symlink (file, shortcut);
@@ -50,14 +40,12 @@ int main (int argc, char **argv) {
             char * envp[] = { NULL };
 
             if (fork() != 0) {
-                waitpid(-1,NULL,0);
-            } 
+                waitpid(-1, NULL, 0);
+            }
             
             else {
-                execve ("/usr/bin/ls", argumentos, envp);
+                execve (command, argumentos, envp);
             }
         }
-
-
     }
 }
