@@ -12,14 +12,13 @@ void type_prompt () {
 }
 
 int main (int argc, char **argv) {
-    char command[20], parameters[20];
+    char command[20], parameters[50];
     while (1) {
         type_prompt ();
         scanf ("%s %s", command, parameters);
 
         if (strcmp (command, "mkdir") == 0) {
             printf ("Chamada do mkdir\n");
-            //scanf ("%s", parameters);
             printf ("parametro: %s\n", parameters);
 
             if (mkdir(parameters, 0777) == 0)
@@ -47,14 +46,16 @@ int main (int argc, char **argv) {
         }
 
         else {
-            /* if (fork() != 0) {
-                waitpid(-1,&status,0);
+            char * argumentos[] = { " ", parameters, NULL };
+            char * envp[] = { NULL };
+
+            if (fork() != 0) {
+                waitpid(-1,NULL,0);
             } 
             
             else {
-                execve(command,parameters,0);
-            } */
-            printf ("lalaalalal\n");
+                execve ("/usr/bin/ls", argumentos, envp);
+            }
         }
 
 
