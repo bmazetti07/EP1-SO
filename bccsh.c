@@ -8,7 +8,13 @@
 #include <signal.h>
 
 void type_prompt () {
-    printf ("{Hirotroxa@diretório} ");
+    char * username = NULL;
+    char * path = NULL;
+
+    username = getlogin();
+    path = getcwd(path, 0);
+
+    printf("{%s@%s} ", username, path);
 }
 
 int main (int argc, char **argv) {
