@@ -25,7 +25,7 @@ char * read_prompt (char * line_read) {
 
     if (line_read) {
         free (line_read);
-        line_read = (char *)NULL;
+        line_read = (char *) NULL;
     }
 
     line_read = readline (prompt);
@@ -50,7 +50,7 @@ int main (int argc, char **argv) {
             mkdir (parameters, 0777);
 
         else if (strcmp (command, "kill") == 0) {
-            char * aux = strtok(NULL, " ");
+            char * aux = strtok (NULL, " ");
             pid_t pid = atoi (aux);
 
             kill (pid, SIGKILL);
