@@ -4,6 +4,8 @@
 #include <unistd.h>
 #include <time.h>
 #include <stdbool.h>
+#include <math.h>
+#include <string.h>
 
 #include "header.h"
 
@@ -13,10 +15,13 @@
 
 // VARIÁVEIS GLOBAIS
 Processo processos[maxProcessos];
-bool finished[maxProcessos] = { 0 };
+bool finished = false;
+bool created = false;
+bool finishedLastProc = false;
 int tempos[maxProcessos];
 int nProc = 0;
 int relogio = 0;
+int procAtual = 0;
 
 // SEMÁFOROS
 pthread_mutex_t sem[maxProcessos];
@@ -40,64 +45,96 @@ void readFile (char * filename) {
 
 // FUNÇÃO PARA CADA UM DOS PROCESSOS
 void * work (void * parameters) {
-    Arguments parameter = *( (Arguments * ) parameters);
-    int id = parameter.id;
-    int type = parameter.escType;
+    // Arguments parameter = *( (Arguments * ) parameters);
+    // int id = parameter.id;
+    // int type = parameter.escType;
+    int aux = 0;
 
-    int cont = 0;
-    int aux;
-    float time = processos[id].dt;
-    
-    while (time > 0) {
-        aux = 10000 * 10000;
-        cont ++;
-        time = time - sleep_time;
-        usleep (sleep_time * 1000000);
+    created = true;
 
-        if (type == 1) {
-            if (cont % 10 == 0) {
-                pthread_mutex_unlock (&semEscalonador);
-                pthread_mutex_lock (&sem[id]);
-                relogio ++;
-                cont = 0;
-            }
+    while (finished == false) {
+        aux ++;
+        aux --;
+    }
+
+    return NULL;
+}
+
+// THREAD PARA TIMER GLOBAL
+void * timer (void * arguments) {
+    time_t start, agora;
+    double tempo;
+    int segundo;
+
+    time (&start);
+
+    while (!finishedLastProc) {
+        time (&agora);
+        tempo = difftime (agora, start);
+
+        if (tempo == floor (tempo)) {
+            pthread_mutex_unlock (&semEscalonador);
+            usleep (1000000);
+            relogio ++;
         }
     }
 
-    pthread_mutex_unlock (&semEscalonador);
-    finished[id] = true;
-      
     return NULL;
 }
 
 // ESCALONADOR FIRST-COME FIRST-SERVED
 void * fcfs (void * arguments) {
-    pthread_mutex_lock (&semEscalonador);
-    pthread_t threads[nProc];
-    Arguments parameters[nProc];
+    pthread_t thread;
+    Processo aux;
+    int fimTimeProc = 0;
 
-    for (int i = 0; i < nProc; i ++) {
-        parameters[i].id = i;
-        parameters[i].escType = 1;
+    createFila ();
+    while (procAtual <= nProc) {
+        if (finishedLastProc)
+            break;
 
-        if (pthread_create (&threads[i], NULL, work, (void *) &parameters[i])){
-            printf ("ERRO ao criar a thread %d!\n", i);
-            exit (1);
-        }
+        pthread_mutex_lock (&semEscalonador);
     
-        while (finished[i] == false) {
-            pthread_mutex_lock (&semEscalonador);
-            pthread_mutex_unlock (&sem[i]);
+        while (tempos[relogio]) {
+            queue (processos[procAtual]);
+            procAtual ++;
+            tempos[relogio] --;
         }
 
-        if (pthread_join (threads[i], NULL)) {
-            printf ("ERRO ao esperar o término da thread %d!\n", i);
-            exit (1);
-        }
+        // printf ("relogio = %d\n", relogio);
+        // print ();
 
-        pthread_detach (threads[i]);
+        if (emptyFila () == 0) {
+            if (created == true && relogio == fimTimeProc) {
+                finished = true;
+                created = false;
+                aux = dequeue ();
+
+                if (strcmp (aux.nome, processos[nProc - 1].nome) == 0)
+                    finishedLastProc = true;
+
+                if (pthread_join (thread, NULL)) {
+                    printf ("ERRO ao esperar o término da thread!");
+                    exit (1);
+                }
+                pthread_detach (thread);
+            }
+
+            if (created == false) {
+                finished = false;
+
+                if (pthread_create (&thread, NULL, work, NULL)) {
+                    printf ("ERRO ao criar a thread!");
+                    exit (1);
+                }
+
+                aux = getIni ();
+                fimTimeProc = aux.dt + relogio;
+            }
+        }
     }
 
+    freeFila ();
     return NULL;
 }
 
@@ -106,34 +143,37 @@ void * srtn (void * arguments) {
     pthread_mutex_lock (&semEscalonador);
 
     createLista ();
-    
-    
-    
-
-
-
 }
 
-// INICIALIZA A THREAD DO ESCALONADOR
+// INICIALIZA A THREAD DO ESCALONADOR E DO TIMER
 void escInit (int type) {
     pthread_t escalonador;
+    pthread_t timerThread;
 
-    // incializa os semáforos das threads lockados, menos o do escalonador
+    // incializa os semáforos das threads lockados
     pthread_mutex_init (&semEscalonador, NULL);
+    pthread_mutex_lock (&semEscalonador);
     for (int i = 0; i < nProc; i ++) {
         pthread_mutex_init (&sem[i], NULL);
         pthread_mutex_lock (&sem[i]);
     }
 
-    // cria a thread do escalonador
+    // cria a thread do escalonador e para o timer
+    pthread_create (&timerThread, NULL, timer, NULL);
+
     if (type == 1)
         pthread_create (&escalonador, NULL, fcfs, NULL);
     else if (type == 2)
         pthread_create (&escalonador, NULL, srtn, NULL);
  
-    // espera até o fim da execução da thread do escalonador
+    // espera até o fim da execução da thread do escalonador e do timer
     if (pthread_join (escalonador, NULL)) {
         printf ("ERRO ao entrar na thread do escalonador!\n");
+        exit (1);
+    };
+
+    if (pthread_join (timerThread, NULL)) {
+        printf ("ERRO ao entrar na thread do timer!\n");
         exit (1);
     };
 

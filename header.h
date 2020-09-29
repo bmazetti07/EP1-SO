@@ -15,7 +15,7 @@ typedef struct arguments{
     int escType;
 } Arguments;
 
-/* Fila usada no escalonador Round Robin*/
+/* Fila usada nos escalonadores Round Robin e FCFS*/
 
 Processo * fila;
 
@@ -37,7 +37,11 @@ void queue (Processo proc);
 
 Processo dequeue ();
 
+Processo getIni ();
+
 int emptyFila ();
+
+void printFila ();
 
 
 /* Estrutura usada no escalonador SRTN */

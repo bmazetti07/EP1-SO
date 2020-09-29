@@ -17,34 +17,44 @@ void freeFila () {
 }
 
 void resizeFila () {
-    /* int * novo = malloc (5 * tamFila);
+    Processo * novo = malloc (5 * tamFila);
 
-    for (int i = 0; i < tamFila; i ++)
-        novo[i] = fila[i];
+    for (int i = 0; i < nFila; i ++)
+        novo[i] = fila[(ini + i)%tamFila];
     
     freeFila ();
 
-    tamFila *= 5;
-
-    fila = novo; */
-    fila = (Processo *) realloc (fila, tamFila * 5);
+    ini = 0;
+    fim = nFila;
 
     tamFila *= 5;
+
+    fila = novo;
 }
 
 void queue (Processo proc) {
-    if (fim == tamFila)
+    if ((fim + 1) % tamFila == ini)
         resizeFila ();
     
-    fila[fim++] = proc;
+    fila[fim] = proc;
+
+    fim = (fim + 1) % tamFila;
 
     nFila ++;
 }
 
 Processo dequeue () {
-    nFila --;
+    Processo aux;
 
-    return fila[ini++];
+    nFila --;
+    aux = fila[ini];
+    ini = (ini + 1) % tamFila;
+
+    return aux;
+}
+
+Processo getIni () {
+    return fila[ini];
 }
 
 int emptyFila () {
@@ -52,6 +62,14 @@ int emptyFila () {
         return 1;
     
     return 0;
+}
+
+void printFila () {
+    printf ("Fila: ");
+    for (int i = ini; i != fim; i = (i + 1) % tamFila) {
+        printf (" %s ", fila[i].nome);
+    }
+    printf ("\n");
 }
 
 
