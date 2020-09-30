@@ -4,9 +4,14 @@
 // REPRESENTAÇÃO DE CADA PROCESSO
 typedef struct processo {
     char nome[30];
-    int start;
-    int dt;
-    int deadline;
+    int id;                 // Nome do processo
+    int start;              // t0
+    int dt;                 // Tempo que o processo deve rodar
+    int deadline;           // Tempo final suposto do processo
+    float runCount;         // Tempo de execução do processo no momento
+    bool created;           // Indica se o processo já foi criado
+    bool finishedDef;       // Indica se o processo já foi finalizado
+    bool finishedOp;        // Indica se as operações do processo devem cessar ou não
 } Processo;
 
 // ARGUMENTOS FORNECIDOS À FUNÇÃO WORK()

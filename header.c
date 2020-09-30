@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdbool.h>
 #include "header.h"
 
 /* Implementação fila usada no Round Robin */
@@ -54,7 +55,7 @@ Processo dequeue () {
 }
 
 Processo getIni () {
-    return fila[ini];
+    return (fila[ini]);
 }
 
 int emptyFila () {
