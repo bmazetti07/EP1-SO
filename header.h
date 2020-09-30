@@ -14,19 +14,13 @@ typedef struct processo {
     bool finishedOp;        // Indica se as operações do processo devem cessar ou não
 } Processo;
 
-// ARGUMENTOS FORNECIDOS À FUNÇÃO WORK()
-typedef struct arguments{
-    int id;
-    int escType;
-} Arguments;
-
-/* Fila usada nos escalonadores Round Robin e FCFS*/
+/* Fila usada nos escalonadores Round Robin, SRTN e FCFS*/
 
 Processo * fila;
 
-int ini;
+int iniFila;
 
-int fim;
+int fimFila;
 
 int tamFila;
 
@@ -42,35 +36,13 @@ void queue (Processo proc);
 
 Processo dequeue ();
 
-Processo getIni ();
+Processo getIniFila ();
 
 int emptyFila ();
 
 void printFila ();
 
-
-/* Estrutura usada no escalonador SRTN */
-
-Processo * lista;
-
-int tamLista;
-
-int nLista;
-
-void createLista ();
-
-void freeLista ();
-
-void resizeLista ();
-
-void put (Processo proc);
-
-void take ();
-
-void sortLista ();
-
-int emptyLista ();
-
+void sortFila (Processo *v);
 
 
 #endif

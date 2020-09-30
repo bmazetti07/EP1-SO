@@ -9,8 +9,8 @@ void createFila () {
     fila = malloc (57 * sizeof (Processo));
     
     tamFila = 57;
-    ini = fim = 0;
-    nLista = 0;
+    iniFila = fimFila = 0;
+    nFila = 0;
 }
 
 void freeFila () {
@@ -21,12 +21,12 @@ void resizeFila () {
     Processo * novo = malloc (5 * tamFila);
 
     for (int i = 0; i < nFila; i ++)
-        novo[i] = fila[(ini + i)%tamFila];
+        novo[i] = fila[(iniFila + i)%tamFila];
     
     freeFila ();
 
-    ini = 0;
-    fim = nFila;
+    iniFila = 0;
+    fimFila = nFila;
 
     tamFila *= 5;
 
@@ -34,12 +34,12 @@ void resizeFila () {
 }
 
 void queue (Processo proc) {
-    if ((fim + 1) % tamFila == ini)
+    if ((fimFila + 1) % tamFila == iniFila)
         resizeFila ();
     
-    fila[fim] = proc;
+    fila[fimFila] = proc;
 
-    fim = (fim + 1) % tamFila;
+    fimFila = (fimFila + 1) % tamFila;
 
     nFila ++;
 }
@@ -48,18 +48,18 @@ Processo dequeue () {
     Processo aux;
 
     nFila --;
-    aux = fila[ini];
-    ini = (ini + 1) % tamFila;
+    aux = fila[iniFila];
+    iniFila = (iniFila + 1) % tamFila;
 
     return aux;
 }
 
-Processo getIni () {
-    return (fila[ini]);
+Processo getIniFila () {
+    return (fila[iniFila]);
 }
 
 int emptyFila () {
-    if (ini == fim)
+    if (iniFila == fimFila)
         return 1;
     
     return 0;
@@ -67,16 +67,30 @@ int emptyFila () {
 
 void printFila () {
     printf ("Fila: ");
-    for (int i = ini; i != fim; i = (i + 1) % tamFila) {
+    for (int i = iniFila; i != fimFila; i = (i + 1) % tamFila) {
         printf (" %s ", fila[i].nome);
     }
     printf ("\n");
 }
 
 
+void sortFila (Processo *v) {
+    Processo aux;
+
+    for (int i = iniFila + 1; i < nFila; i = (i + 1) % tamFila) {
+        for (int j = iniFila; j < nFila - i; j = (j + 1) % tamFila) {
+            if ((fila[j].dt - v[fila[j].id].runCount) > (fila[j + 1].dt - v[fila[j + 1].id].runCount)) {
+                aux = fila[j];
+                fila[j] = fila[j + 1];
+                fila[j + 1] = aux;
+            }
+        }
+    }
+}
+
 /* Implementação da estrutura usada no SRTN */
 
-void createLista () {
+/* void createLista () {
     lista = malloc (57 * sizeof (Processo));
 
     tamLista = 57;
@@ -88,9 +102,13 @@ void freeLista () {
 
 void resizeLista () {
     lista = (Processo *) realloc (lista, tamLista * 5);
+    tamLista *= 5;
 }
 
 void put (Processo proc) {
+    if ((fimLista + 1) % tamLista)
+        resizeLista ();
+
     lista[nLista + 1] = proc;
 
     nLista ++;
@@ -103,15 +121,6 @@ void take () {
     nLista --;
 }
 
-void sortLista () {
-    Processo aux;
-
-    for (int i = 2; i < nLista; i++)
-      for (int j = 1; j < nLista - i; j++) {
-         if (lista[j].dt > lista[j + 1].dt) {
-            aux = lista[j];
-            lista[j] = lista[j + 1];
-            lista[j + 1] = aux;
-         }
-      }
-}
+Processo getIniLista () {
+    return (lista[0]);
+} */

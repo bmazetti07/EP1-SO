@@ -9,7 +9,7 @@
 
 #include "header.h"
 
-#define maxProcessos 50 + 7
+#define maxProcessos 1000 + 7
 #define clockTime 1
 #define sleep_time 0.1
 
@@ -58,7 +58,13 @@ void * work (void * parameters) {
     }
 
     else if (type == 2) {
-
+        while (processos[index].finishedDef == false && !pthread_mutex_lock (&sem[index])) {
+            processos[index].finishedOp = false;
+            while (processos[index].finishedOp == false) {
+                op ++;
+                op --;
+            }
+        }
     }
 
     else if (type == 3) {
@@ -68,7 +74,7 @@ void * work (void * parameters) {
                 op ++;
                 op --;
             }
-        }     
+        }
     }
     
     return NULL;
@@ -83,7 +89,7 @@ void * fcfs (void * arguments) {
     int id;
 
     createFila ();
-    while (procFinalizados < nProc) {
+    while (procFinalizados != nProc) {
         while (procAtual < nProc && tempos[relogio]) {
             queue (processos[procAtual]);
             procAtual ++;
@@ -91,7 +97,7 @@ void * fcfs (void * arguments) {
         }
 
         if (!emptyFila ()) {
-            aux = getIni ();
+            aux = getIniFila ();
             id = aux.id;
 
             if (processos[id].created == true && (int) processos[id].runCount >= processos[id].dt) {
@@ -106,7 +112,7 @@ void * fcfs (void * arguments) {
                 procFinalizados ++;
             
                 dequeue ();
-                aux = getIni ();
+                aux = getIniFila ();
                 id = aux.id;
 
                 if (procFinalizados == nProc)
@@ -139,18 +145,102 @@ void * fcfs (void * arguments) {
 
 // ESCALONADOR SHORTEST REMAINING TIME NEXT
 void * srtn (void * arguments) {
-    
+    pthread_t threads[nProc];
+    Processo aux, running;
+    bool newEntry = false;
+    bool firstExec = true;
+    bool changed = true;
+    int relogio = 0;
+    int procFinalizados = 0;
+    int id;
 
+    createFila ();
+    while (procFinalizados != nProc) {
+        while (procAtual < nProc && tempos[relogio]) {
+            queue (processos[procAtual]);
+            procAtual ++;
+            tempos[relogio] --;
+            newEntry = true;
+        }
+        printf ("Relogio == %d\n", relogio);
+        printf ("Antes do sort: ");
+        printFila ();
 
+        if (newEntry) 
+            sortFila (processos);
+        if (firstExec && newEntry) {
+            running = getIniFila ();
+            firstExec = false;
+        }
 
-    createLista ();
+        printf ("Depois do sort: ");
+        printFila ();
+
+        if (!emptyFila ()) {
+            aux = getIniFila ();
+            id = aux.id;
+
+            if (newEntry == false)
+                changed = false;
+
+            else if (newEntry == true && strcmp (aux.nome, running.nome) != 0) {
+                processos[running.id].finishedOp = true;
+
+                running = aux;
+                changed = true;
+            }
+            
+            if (processos[id].created == false) {
+                if (pthread_create (&threads[id], NULL, work, (void *) &id)) {
+                    printf ("ERRO ao criar a thread!");
+                    exit (1);
+                }
+
+                processos[id].created = true;
+                changed = true;
+            }
+
+            if (changed == true)
+                pthread_mutex_unlock (&sem[id]);
+            
+            usleep (1000000);
+            relogio ++;
+            processos[id].runCount ++;
+
+            if ((int) processos[id].runCount >= processos[id].dt) {
+                processos[id].finishedDef = true;
+                processos[id].finishedOp = true;
+
+                if (pthread_join (threads[id], NULL)) {
+                    printf ("ERRO ao esperar o término da thread %d!\n", id);
+                    exit (1);
+                }
+
+                pthread_detach (threads[id]);
+                procFinalizados ++;
+
+                changed = true;
+                dequeue ();
+            }
+        }
+
+        else {
+            usleep (1000000);
+            relogio ++;
+        }
+
+        newEntry = false;
+    }
+
+    freeFila ();
+    return NULL;
 }
 
 // ESCALONADOR ROUND-ROBIN
 void * rr (void * arguments) {
     pthread_t threads[nProc];
     Processo aux;
-    int quantum = 50000; // 0.05s
+    int quantum = 50000;
     int procFinalizados = 0;
     int relogio = 0;
     int cont = 0;
@@ -167,7 +257,7 @@ void * rr (void * arguments) {
         }
 
         if (!emptyFila ()) {
-            aux = getIni ();
+            aux = getIniFila ();
 
             if (processos[aux.id].created == false) {
                 if (pthread_create (&threads[aux.id], NULL, work, (void *) &aux.id)) {
@@ -186,15 +276,13 @@ void * rr (void * arguments) {
                 relogio ++;
 
             processos[aux.id].runCount += 0.05;
-            // printf ("%d %f %d\n", processos[aux.id].dt, processos[aux.id].runCount, relogio);
-            // printFila ();
 
             if ((int) processos[aux.id].runCount >= processos[aux.id].dt) {
                 processos[aux.id].finishedDef = true;
                 processos[aux.id].finishedOp = true;
 
                 if (pthread_join (threads[processos[aux.id].id], NULL)) {
-                    printf ("ERRO ao esperar o término da thread %d\n!", processos[aux.id].id);
+                    printf ("ERRO ao esperar o término da thread %d!\n", processos[aux.id].id);
                     exit (1);
                 }
 
