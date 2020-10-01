@@ -206,16 +206,21 @@ void * srtn (void * arguments) {
             usleep (1000000);
             relogio ++;
             processos[id].runCount ++;
+            //diminuiDt (id, 1);
+
+            printf ("Relogio: %d\n", relogio);
 
             if ((int) processos[id].runCount >= processos[id].dt) {
                 processos[id].finishedDef = true;
                 processos[id].finishedOp = true;
 
+                usleep (10000);
+
                 printf ("Thread %d terminando em %d\n", id, relogio);
-                /* if (pthread_join (threads[id], NULL)) {
+                if (pthread_join (threads[id], NULL)) {
                     printf ("ERRO ao esperar o término da thread %d!\n", id);
                     exit (1);
-                } */
+                }
 
                 pthread_detach (threads[id]);
                 procFinalizados ++;

@@ -76,7 +76,7 @@ void printFila () {
 int compara (const void * a, const void * b) {
     Processo * x = (Processo *) a;
     Processo * y = (Processo *) b; 
-    return ((x -> dt - x -> runCount) - (y -> dt - y -> runCount));
+    return ((x -> dt) - (y -> dt));
 }
 
 
@@ -93,6 +93,10 @@ void sortFila (Processo *v) {
         }
     } */
     qsort (fila + iniFila, fimFila - iniFila, sizeof (Processo), compara);
+}
+
+void diminuiDt (int id, int val) {
+    fila[id].dt -= val;
 }
 
 /* Implementação da estrutura usada no SRTN */

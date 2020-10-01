@@ -46,5 +46,6 @@ int compara (const void * a, const void * b);
 
 void sortFila (Processo *v);
 
+void diminuiDt (int id, int val);
 
 #endif
