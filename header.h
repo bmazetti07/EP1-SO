@@ -2,7 +2,8 @@
 #define HEADER_H
 
 // REPRESENTAÇÃO DE CADA PROCESSO
-typedef struct processo {
+typedef struct processo Processo;
+struct processo {
     char nome[30];
     int id;                 // Nome do processo
     int start;              // t0
@@ -12,7 +13,7 @@ typedef struct processo {
     bool created;           // Indica se o processo já foi criado
     bool finishedDef;       // Indica se o processo já foi finalizado
     bool finishedOp;        // Indica se as operações do processo devem cessar ou não
-} Processo;
+};
 
 /* Fila usada nos escalonadores Round Robin, SRTN e FCFS*/
 
@@ -26,7 +27,7 @@ int tamFila;
 
 int nFila;
 
-void createFila ();
+void createFila (int size);
 
 void freeFila ();
 
@@ -42,10 +43,8 @@ int emptyFila ();
 
 void printFila ();
 
-int compara (const void * a, const void * b);
+void sortFila ();
 
-void sortFila (Processo *v);
-
-void diminuiDt (int id, int val);
+void diminuiDt (int val);
 
 #endif

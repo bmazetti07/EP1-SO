@@ -50,6 +50,7 @@ void * work (void * parameters) {
     int index = *( (int *) parameters);
     int op = 0;
 
+
     if (type == 1) {
         while (processos[index].finishedDef == false) {
             op ++;
@@ -65,6 +66,7 @@ void * work (void * parameters) {
                 op --;
             }
         }
+        printf ("index = %d\n", index);
     }
 
     else if (type == 3) {
@@ -88,7 +90,7 @@ void * fcfs (void * arguments) {
     int procFinalizados = 0;
     int id;
 
-    createFila ();
+    createFila (nProc);
     while (procFinalizados != nProc) {
         while (procAtual < nProc && tempos[relogio]) {
             queue (processos[procAtual]);
@@ -154,7 +156,7 @@ void * srtn (void * arguments) {
     int procFinalizados = 0;
     int id;
 
-    createFila ();
+    createFila (nProc);
     while (procFinalizados != nProc) {
         while (procAtual < nProc && tempos[relogio]) {
             queue (processos[procAtual]);
@@ -163,17 +165,17 @@ void * srtn (void * arguments) {
             newEntry = true;
         }
         printf ("Relogio == %d\n", relogio);
-        printf ("Antes do sort: ");
+        printf ("Antes do sort: \n");
         printFila ();
 
         if (newEntry) 
-            sortFila (processos);
+            sortFila ();
         if (firstExec && newEntry) {
             running = getIniFila ();
             firstExec = false;
         }
 
-        printf ("Depois do sort: ");
+        printf ("Depois do sort: \n");
         printFila ();
 
         if (!emptyFila ()) {
@@ -206,17 +208,12 @@ void * srtn (void * arguments) {
             usleep (1000000);
             relogio ++;
             processos[id].runCount ++;
-            //diminuiDt (id, 1);
-
-            printf ("Relogio: %d\n", relogio);
+            diminuiDt (1);
 
             if ((int) processos[id].runCount >= processos[id].dt) {
                 processos[id].finishedDef = true;
                 processos[id].finishedOp = true;
 
-                usleep (10000);
-
-                printf ("Thread %d terminando em %d\n", id, relogio);
                 if (pthread_join (threads[id], NULL)) {
                     printf ("ERRO ao esperar o término da thread %d!\n", id);
                     exit (1);
@@ -252,7 +249,7 @@ void * rr (void * arguments) {
     int cont = 0;
     int interval = 1000000 / quantum;
 
-    createFila ();
+    createFila (nProc);
     while (procFinalizados != nProc) {
         if (cont % interval == 0) {
             while (procAtual < nProc && tempos[relogio] != 0) {

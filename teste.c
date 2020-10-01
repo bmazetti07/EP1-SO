@@ -1,85 +1,43 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <pthread.h>
-#include <stdbool.h>
-#include <unistd.h>
-#include <math.h>
+#include <stdio.h>    
+     
+int main()    
+{    
+    int ini = 2;
+    int fim = 5;
 
-#define quantum 50000
-
-pthread_mutex_t semaforo;
-bool finished = false;
-bool finishedDef = false;
-
-void * threadFunc (void * arguments) {
-    int aux = 0;
-    while (finishedDef == false && !pthread_mutex_lock (&semaforo)) {
-        printf ("entrei!\n");
-        finished = false;
-        while (finished == false) {
-            aux ++;
-            aux --;
-        }
-        printf ("SAI!\n");
-    }
-    
-    printf ("terminei");
-    return NULL;
-}
-
-void * escFunc (void * arguments) {
-    pthread_t thread;
-    pthread_mutex_init (&semaforo, NULL);
-    pthread_mutex_lock (&semaforo);
-    pthread_create (&thread, NULL, threadFunc, NULL);
-    
-    int aux = 0;
-    int count = 0;
-
-    while (aux < 1) {
-        pthread_mutex_unlock (&semaforo);
-        while (count < 5) {
-            usleep (quantum);
-            count ++;
-        }
+    //Initialize array    
+    //           0  1  2  3  4  5  6 
+    int arr[] = {7, 6, 5, 4, 3, 2, 1};     
+    int temp = 0;    
         
-        finished = true;
-        count = 0;
-        aux++;
-    }
-
-    finishedDef = true;
-    return NULL;
-}
-
-int main(void) {
-    pthread_t escalonador;
-    
-    /* pthread_create (&escalonador, NULL, escFunc, NULL);
-    pthread_join (escalonador, NULL);
-    
-    pthread_mutex_destroy (&semaforo);
-
-    printf ("%f\n", (float) quantum / 1000000); */
-
-    float a = 1.5, relogio = 0;
-    int b = 1;
-
-    if (b == floor(a))
-        printf ("são iguais\n");
-    else 
-        printf ("são diferentes\n");
-    
-    while (1) {
-        relogio += 0.05;
-        if (relogio == floor (relogio))
-            printf ("aaaaa\n");
-        else
-        {
-            printf("shiiiiiiiiiiiit\n");
-        }
+    //Calculate length of array arr    
+    int length = sizeof(arr)/sizeof(arr[0]);    
         
+    //Displaying elements of original array    
+    printf("Elements of original array: \n");    
+    for (int i = 0; i < length; i++) {     
+        printf("%d ", arr[i]);     
+    }      
+        
+    //Sort the array in ascending order    
+    for (int i = ini; i < fim; i++) {     
+        for (int j = i+1; j < fim; j++) {     
+           if(arr[i] > arr[j]) {    
+               temp = arr[i];    
+               arr[i] = arr[j];    
+               arr[j] = temp;    
+           }     
+        }     
+    }    
+        
+    printf("\n");    
+        
+    //Displaying elements of array after sorting    
+    printf("Elements of array sorted in ascending order: \n");    
+    for (int i = 0; i < length; i++) {     
+        printf("%d ", arr[i]);    
     }
+    printf ("\n");
 
-    return 0;
-}
+    return 0;    
+}     

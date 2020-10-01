@@ -5,11 +5,11 @@
 
 /* Implementação fila usada no Round Robin */
 
-void createFila () {
-    fila = malloc (57 * sizeof (Processo));
+void createFila (int size) {
+    fila = malloc ((size + 3) * sizeof (Processo));
     
-    tamFila = 57;
-    iniFila = fimFila = 0;
+    tamFila = size + 3;
+    iniFila = fimFila = 0; 
     nFila = 0;
 }
 
@@ -21,7 +21,7 @@ void resizeFila () {
     Processo * novo = malloc (5 * tamFila);
 
     for (int i = 0; i < nFila; i ++)
-        novo[i] = fila[(iniFila + i)%tamFila];
+        novo[i] = fila[(iniFila + i) % tamFila];
     
     freeFila ();
 
@@ -42,6 +42,8 @@ void queue (Processo proc) {
     fimFila = (fimFila + 1) % tamFila;
 
     nFila ++;
+    printf ("queue -> ");
+    printf ("iniFila = %d fimFila = %d\n", iniFila, fimFila);
 }
 
 Processo dequeue () {
@@ -50,6 +52,9 @@ Processo dequeue () {
     nFila --;
     aux = fila[iniFila];
     iniFila = (iniFila + 1) % tamFila;
+
+    printf ("dequeue -> ");
+    printf ("iniFila = %d fimFila = %d\n", iniFila, fimFila);
 
     return aux;
 }
@@ -66,72 +71,37 @@ int emptyFila () {
 }
 
 void printFila () {
-    printf ("Fila: ");
-    for (int i = iniFila; i != fimFila; i = (i + 1) % tamFila) {
+    printf ("   Fila: ");
+    for (int i = iniFila; i < fimFila; i = (i + 1) % tamFila) {
         printf (" %s ", fila[i].nome);
     }
+    
+    if (!emptyFila ()) {
+        printf("\n   Fila: ");
+        for (int i = iniFila; i < fimFila; i = (i + 1) % tamFila) {
+            printf (" %d ", fila[i].dt);
+        }
+    }
+    
     printf ("\n");
 }
 
-int compara (const void * a, const void * b) {
-    Processo * x = (Processo *) a;
-    Processo * y = (Processo *) b; 
-    return ((x -> dt) - (y -> dt));
-}
+void sortFila () {
+    Processo aux;
 
-
-void sortFila (Processo *v) {
-    //Processo aux;
-
-    /* for (int i = iniFila + 1; i < nFila; i = (i + 1) % tamFila) {
-        for (int j = iniFila; j < nFila - i; j = (j + 1) % tamFila) {
-            if ((fila[j].dt - v[fila[j].id].runCount) > (fila[j + 1].dt - v[fila[j + 1].id].runCount)) {
-                aux = fila[j];
-                fila[j] = fila[j + 1];
-                fila[j + 1] = aux;
+    printf ("Sort -> ");
+    printf ("iniFila = %d fimFila = %d\n", iniFila, fimFila);
+    for (int i = iniFila; i < fimFila; i = (i + 1) % tamFila) {
+        for (int j = i + 1; j < fimFila; j = (j + 1) % tamFila) {
+            if (fila[i].dt > fila[j].dt) {
+                aux = fila[i];
+                fila[i] = fila[j];
+                fila[j] = aux;
             }
         }
-    } */
-    qsort (fila + iniFila, fimFila - iniFila, sizeof (Processo), compara);
+    }
 }
 
-void diminuiDt (int id, int val) {
-    fila[id].dt -= val;
+void diminuiDt (int val) {
+    fila[iniFila].dt -= val;
 }
-
-/* Implementação da estrutura usada no SRTN */
-
-/* void createLista () {
-    lista = malloc (57 * sizeof (Processo));
-
-    tamLista = 57;
-}
-
-void freeLista () {
-    free (lista);
-}
-
-void resizeLista () {
-    lista = (Processo *) realloc (lista, tamLista * 5);
-    tamLista *= 5;
-}
-
-void put (Processo proc) {
-    if ((fimLista + 1) % tamLista)
-        resizeLista ();
-
-    lista[nLista + 1] = proc;
-
-    nLista ++;
-}
-
-void take () {
-    for (int i = 0; i < nLista; i ++)
-        lista[i] = lista[i+1];
-    
-    nLista --;
-}
-
-Processo getIniLista () {
-    return (lista[0]);
-} */
