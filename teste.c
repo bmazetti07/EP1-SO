@@ -1,43 +1,35 @@
-#include <stdio.h>    
-     
-int main()    
-{    
-    int ini = 2;
-    int fim = 5;
+#define _GNU_SOURCE
 
-    //Initialize array    
-    //           0  1  2  3  4  5  6 
-    int arr[] = {7, 6, 5, 4, 3, 2, 1};     
-    int temp = 0;    
-        
-    //Calculate length of array arr    
-    int length = sizeof(arr)/sizeof(arr[0]);    
-        
-    //Displaying elements of original array    
-    printf("Elements of original array: \n");    
-    for (int i = 0; i < length; i++) {     
-        printf("%d ", arr[i]);     
-    }      
-        
-    //Sort the array in ascending order    
-    for (int i = ini; i < fim; i++) {     
-        for (int j = i+1; j < fim; j++) {     
-           if(arr[i] > arr[j]) {    
-               temp = arr[i];    
-               arr[i] = arr[j];    
-               arr[j] = temp;    
-           }     
-        }     
-    }    
-        
-    printf("\n");    
-        
-    //Displaying elements of array after sorting    
-    printf("Elements of array sorted in ascending order: \n");    
-    for (int i = 0; i < length; i++) {     
-        printf("%d ", arr[i]);    
+#include <stdio.h>
+#include <pthread.h>
+#include <unistd.h>
+
+void* DoWork(void* args) {
+    printf("ID: %lu, CPU: %d\n", pthread_self(), sched_getcpu());
+    return 0;
+}
+
+int main() {   
+
+    int numberOfProcessors = sysconf(_SC_NPROCESSORS_ONLN);
+    printf("Number of processors: %d\n", numberOfProcessors);
+
+    pthread_t threads[numberOfProcessors];
+
+    pthread_attr_t attr;
+    cpu_set_t cpus;
+    pthread_attr_init(&attr);
+
+    for (int i = 0; i < numberOfProcessors; i++) {
+       CPU_ZERO(&cpus);
+       CPU_SET(i, &cpus);
+       pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &cpus);
+       pthread_create(&threads[i], &attr, DoWork, NULL);
     }
-    printf ("\n");
 
-    return 0;    
-}     
+    for (int i = 0; i < numberOfProcessors; i++) {
+        pthread_join(threads[i], NULL);
+    }
+
+    return 0;
+}

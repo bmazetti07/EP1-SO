@@ -1,3 +1,5 @@
+#define _GNU_SOURCE                                 // Para a função sched_getcpu();
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <pthread.h>
@@ -6,37 +8,36 @@
 #include <stdbool.h>
 #include <math.h>
 #include <string.h>
-
 #include "header.h"
 
-#define maxProcessos 1000 + 7
-#define clockTime 1
-#define sleep_time 0.1
+#define maxProcessos 300000 + 7
 
 // VARIÁVEIS GLOBAIS DESTINADOS
 Processo processos[maxProcessos];                   // Processos lidos do arquivo de trace
-int tempos[100000];                                 // Número de processos existentes em cada t0
+int tempos[500000];                                 // Número de processos existentes em cada t0
 int nProc = 0;                                      // Número de processos totais
 int procAtual = 0;                                  // Processo atuando no momento
 int type = 0;                                       // Tipo do escalonador
+int mudaContexto = 0;                               // Número de mudanças de contexto           
+bool paramD = false;                                // Sinaliza a flag "d" foi solicitada
 
-// SEMÁFOROS
+// SEMÁFOROS PARA OS PROCESSOS
 pthread_mutex_t sem[maxProcessos];
-pthread_mutex_t semEscalonador;
 
 // LÊ O ARQUIVO DE TRACE
 void readFile (char * filename) {
     FILE * trace;
     trace = fopen (filename, "r");
-               
+
     while (!feof (trace)) {
         if (fscanf (trace, "%s %d %d %d", processos[nProc].nome, &processos[nProc].start, &processos[nProc].dt, &processos[nProc].deadline) != 4)
             continue;
-        printf ("%s %d %d %d\n", processos[nProc].nome, processos[nProc].start, processos[nProc].dt, processos[nProc].deadline);
+        // printf ("%s %d %d %d\n", processos[nProc].nome, processos[nProc].start, processos[nProc].dt, processos[nProc].deadline);
         processos[nProc].id = nProc;
         processos[nProc].created = false;
         processos[nProc].finishedDef = false;
         processos[nProc].finishedOp = false;
+        processos[nProc].tf = -1;
         processos[nProc].runCount = 0.0;
         tempos[processos[nProc].start] ++;
         nProc ++;
@@ -45,37 +46,48 @@ void readFile (char * filename) {
     fclose (trace);
 }
 
+// ESCREVE NO ARQUIVO FILENAME: NOME DO PROCESSO | TF | TR
+void writeFile (char * filename) {
+    FILE * file;
+    file = fopen (filename, "w");
+
+    for (int i = 0; i < nProc; i ++)
+        fprintf (file, "%-30s %10d %10d\n", processos[i].nome, processos[i].tf, processos[i].tf - processos[i].start);
+    fprintf (file, "%d", mudaContexto);
+}
+
 // FUNÇÃO PARA CADA UM DOS PROCESSOS
 void * work (void * parameters) {
     int index = *( (int *) parameters);
     int op = 0;
 
-
     if (type == 1) {
+        if (paramD)
+            fprintf (stderr, "Processo [%s] começou a usar a [CPU %d]\n", processos[index].nome, sched_getcpu());
+
         while (processos[index].finishedDef == false) {
             op ++;
             op --;
         }
+
+        if (paramD)
+            fprintf (stderr, "Processo [%s] liberou a [CPU %d]\n", processos[index].nome, sched_getcpu());
+
     }
 
-    else if (type == 2) {
+    else if (type == 2 || type == 3) {
         while (processos[index].finishedDef == false && !pthread_mutex_lock (&sem[index])) {
+            if (paramD)
+                fprintf (stderr, "Processo [%s] começou a usar a [CPU %d]\n", processos[index].nome, sched_getcpu());
+                
             processos[index].finishedOp = false;
             while (processos[index].finishedOp == false) {
                 op ++;
                 op --;
             }
-        }
-        printf ("index = %d\n", index);
-    }
 
-    else if (type == 3) {
-        while (processos[index].finishedDef == false && !pthread_mutex_lock (&sem[index])) {
-            processos[index].finishedOp = false;
-            while (processos[index].finishedOp == false) {
-                op ++;
-                op --;
-            }
+            if (paramD)
+                fprintf (stderr, "Processo [%s] liberou a [CPU %d]\n", processos[index].nome, sched_getcpu());
         }
     }
     
@@ -93,6 +105,9 @@ void * fcfs (void * arguments) {
     createFila (nProc);
     while (procFinalizados != nProc) {
         while (procAtual < nProc && tempos[relogio]) {
+            if (paramD)
+                fprintf (stderr, "O processo [%s] chegou no sistema: [t0 - %d] | [dt - %d] | [deadline - %d]\n", processos[procAtual].nome, processos[procAtual].start, processos[procAtual].dt, processos[procAtual].deadline);
+
             queue (processos[procAtual]);
             procAtual ++;
             tempos[relogio] --;
@@ -112,13 +127,22 @@ void * fcfs (void * arguments) {
 
                 pthread_detach (thread);
                 procFinalizados ++;
-            
-                dequeue ();
-                aux = getIniFila ();
-                id = aux.id;
+                processos[id].tf = relogio;
+                if (paramD)
+                    fprintf (stderr, "O processo [%s] finalizou: [tf - %d] | [tr - %d]\n", processos[id].nome, processos[id].tf, processos[id].tf - processos[id].start);
 
+                dequeue ();
                 if (procFinalizados == nProc)
                     break;
+
+                if (!emptyFila ()) {
+                    mudaContexto ++;
+                    if (paramD)
+                        fprintf (stderr, "Nova mudança de contexto. Total de mudanças até agora: %d\n", mudaContexto);
+                    
+                    aux = getIniFila ();
+                    id = aux.id;
+                }
             }
 
             if (processos[id].created == false) {
@@ -159,14 +183,20 @@ void * srtn (void * arguments) {
     createFila (nProc);
     while (procFinalizados != nProc) {
         while (procAtual < nProc && tempos[relogio]) {
+            if (paramD)
+                fprintf (stderr, "O processo [%s] chegou no sistema: [t0 - %d] | [dt - %d] | [deadline - %d]\n", processos[procAtual].nome, processos[procAtual].start, processos[procAtual].dt, processos[procAtual].deadline);
+
             queue (processos[procAtual]);
             procAtual ++;
             tempos[relogio] --;
             newEntry = true;
         }
+
+        /*
         printf ("Relogio == %d\n", relogio);
         printf ("Antes do sort: \n");
         printFila ();
+        */
 
         if (newEntry) 
             sortFila ();
@@ -175,19 +205,28 @@ void * srtn (void * arguments) {
             firstExec = false;
         }
 
-        printf ("Depois do sort: \n");
-        printFila ();
+        /* printf ("Depois do sort: \n");
+        printFila (); */
 
         if (!emptyFila ()) {
             aux = getIniFila ();
             id = aux.id;
 
-            if (newEntry == false)
-                changed = false;
+            if (newEntry == false) {
+                if (strcmp (aux.nome, running.nome) == 0)
+                    changed = false;
+                else 
+                    changed = true;
+            }
 
             else if (newEntry == true && strcmp (aux.nome, running.nome) != 0) {
                 processos[running.id].finishedOp = true;
 
+                if (processos[running.id].tf != relogio) {
+                    mudaContexto ++;
+                    if (paramD)
+                        fprintf (stderr, "Nova mudança de contexto. Total de mudanças até agora: %d\n", mudaContexto);
+                }
                 running = aux;
                 changed = true;
             }
@@ -221,9 +260,18 @@ void * srtn (void * arguments) {
 
                 pthread_detach (threads[id]);
                 procFinalizados ++;
+                processos[id].tf = relogio;
+                if (paramD)
+                    fprintf (stderr, "O processo [%s] finalizou: [tf - %d] | [tr - %d]\n", processos[id].nome, processos[id].tf, processos[id].tf - processos[id].start);
 
                 changed = true;
                 dequeue ();
+
+                if (!emptyFila ()) {
+                    mudaContexto ++;
+                    if (paramD)
+                        fprintf (stderr, "Nova mudança de contexto. Total de mudanças até agora: %d\n", mudaContexto);
+                }
             }
         }
 
@@ -234,6 +282,8 @@ void * srtn (void * arguments) {
 
         newEntry = false;
     }
+
+    //mudaContexto --;
 
     freeFila ();
     return NULL;
@@ -248,11 +298,15 @@ void * rr (void * arguments) {
     int relogio = 0;
     int cont = 0;
     int interval = 1000000 / quantum;
+    int id;
 
     createFila (nProc);
     while (procFinalizados != nProc) {
         if (cont % interval == 0) {
             while (procAtual < nProc && tempos[relogio] != 0) {
+                if (paramD)
+                    fprintf (stderr, "O processo [%s] chegou no sistema: [t0 - %d] | [dt - %d] | [deadline - %d]\n", processos[procAtual].nome, processos[procAtual].start, processos[procAtual].dt, processos[procAtual].deadline);
+                    
                 queue (processos[procAtual]);
                 procAtual ++;
                 tempos[relogio] --;
@@ -261,43 +315,60 @@ void * rr (void * arguments) {
 
         if (!emptyFila ()) {
             aux = getIniFila ();
+            id = aux.id;
 
-            if (processos[aux.id].created == false) {
-                if (pthread_create (&threads[aux.id], NULL, work, (void *) &aux.id)) {
-                    printf ("ERRO ao criar a thread %d!\n", aux.id);
+            if (processos[id].created == false) {
+                if (pthread_create (&threads[id], NULL, work, (void *) &id)) {
+                    printf ("ERRO ao criar a thread %d!\n", id);
                     exit (1);
                 }
                 
-                processos[aux.id].created = true;
+                processos[id].created = true;
             }
 
-            pthread_mutex_unlock (&sem[aux.id]);
+            pthread_mutex_unlock (&sem[id]);
         
             usleep (quantum);
             cont ++;
             if (cont % interval == 0)
                 relogio ++;
 
-            processos[aux.id].runCount += 0.05;
+            processos[id].runCount += 0.05;
 
-            if ((int) processos[aux.id].runCount >= processos[aux.id].dt) {
-                processos[aux.id].finishedDef = true;
-                processos[aux.id].finishedOp = true;
+            if ((int) processos[id].runCount >= processos[id].dt) {
+                processos[id].finishedDef = true;
+                processos[id].finishedOp = true;
 
-                if (pthread_join (threads[processos[aux.id].id], NULL)) {
-                    printf ("ERRO ao esperar o término da thread %d!\n", processos[aux.id].id);
+                if (pthread_join (threads[id], NULL)) {
+                    printf ("ERRO ao esperar o término da thread %d!\n", id);
                     exit (1);
                 }
 
-                pthread_detach (threads[processos[aux.id].id]);
+                pthread_detach (threads[id]);
                 procFinalizados ++;
+                processos[id].tf = relogio;
+
+                if (paramD)
+                    fprintf (stderr, "O processo [%s] finalizou: [tf - %d] | [tr - %d]\n", processos[id].nome, processos[id].tf, processos[id].tf - processos[id].start);
             }
 
-            processos[aux.id].finishedOp = true;
-            if (processos[aux.id].finishedDef == false)
+            processos[id].finishedOp = true;
+            if (processos[id].finishedDef == false) {
                 queue (dequeue ());
-            else
+                if (strcmp (aux.nome, getIniFila ().nome) != 0) {
+                    mudaContexto ++;
+                    if (paramD)
+                        fprintf (stderr, "Nova mudança de contexto. Total de mudanças até agora: %d\n", mudaContexto);
+                }
+            }
+            else {
                 dequeue ();
+                if (!emptyFila ()) {
+                    mudaContexto ++;
+                    if (paramD)
+                        fprintf (stderr, "Nova mudança de contexto. Total de mudanças até agora: %d\n", mudaContexto);
+                }
+            }
         }
 
         else {
@@ -317,13 +388,12 @@ void escInit (int type) {
     pthread_t escalonador;
 
     // incializa os semáforos das threads lockados
-    pthread_mutex_init (&semEscalonador, NULL);
-    pthread_mutex_lock (&semEscalonador);
     for (int i = 0; i < nProc; i ++) {
         pthread_mutex_init (&sem[i], NULL);
         pthread_mutex_lock (&sem[i]);
     }
 
+    // inicializa a thread do escalonador
     if (type == 1)
         pthread_create (&escalonador, NULL, fcfs, NULL);
     else if (type == 2)
@@ -338,7 +408,6 @@ void escInit (int type) {
     };
 
     // destrói os semáforos
-    pthread_mutex_destroy (&semEscalonador);
     for (int i = 0; i < nProc; i ++) 
         pthread_mutex_destroy (&sem[i]);
 }
@@ -346,8 +415,12 @@ void escInit (int type) {
 int main (int argc, char **argv) {
     type = atoi (argv[1]);
     readFile (argv[2]);
+    if (argc == 5 && strcmp (argv[4], "d") == 0)
+        paramD = true;
 
     escInit (type);
+
+    writeFile (argv[3]);
   
     return 0;
 }

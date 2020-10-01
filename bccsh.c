@@ -39,6 +39,7 @@ char * read_prompt (char * line_read) {
 int main (int argc, char **argv) {
     char * command;
     char * parameters;
+    char * paramEP[3];
     static char * all_command = NULL;
 
     while (1) {
@@ -64,7 +65,11 @@ int main (int argc, char **argv) {
         }
 
         else {
-            char * argumentos[] = { " ", parameters, NULL };
+            paramEP[0] = strtok (NULL, " ");
+            paramEP[1] = strtok (NULL, " ");
+            paramEP[2] = strtok (NULL, " ");
+
+            char * argumentos[] = { " ", parameters, paramEP[0], paramEP[1], paramEP[2], NULL };
             char * envp[] = { NULL };
 
             if (fork() != 0) {
