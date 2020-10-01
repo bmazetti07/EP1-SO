@@ -211,10 +211,11 @@ void * srtn (void * arguments) {
                 processos[id].finishedDef = true;
                 processos[id].finishedOp = true;
 
-                if (pthread_join (threads[id], NULL)) {
+                printf ("Thread %d terminando em %d\n", id, relogio);
+                /* if (pthread_join (threads[id], NULL)) {
                     printf ("ERRO ao esperar o término da thread %d!\n", id);
                     exit (1);
-                }
+                } */
 
                 pthread_detach (threads[id]);
                 procFinalizados ++;

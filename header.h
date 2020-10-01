@@ -42,6 +42,8 @@ int emptyFila ();
 
 void printFila ();
 
+int compara (const void * a, const void * b);
+
 void sortFila (Processo *v);
 
 

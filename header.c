@@ -73,11 +73,17 @@ void printFila () {
     printf ("\n");
 }
 
+int compara (const void * a, const void * b) {
+    Processo * x = (Processo *) a;
+    Processo * y = (Processo *) b; 
+    return ((x -> dt - x -> runCount) - (y -> dt - y -> runCount));
+}
+
 
 void sortFila (Processo *v) {
-    Processo aux;
+    //Processo aux;
 
-    for (int i = iniFila + 1; i < nFila; i = (i + 1) % tamFila) {
+    /* for (int i = iniFila + 1; i < nFila; i = (i + 1) % tamFila) {
         for (int j = iniFila; j < nFila - i; j = (j + 1) % tamFila) {
             if ((fila[j].dt - v[fila[j].id].runCount) > (fila[j + 1].dt - v[fila[j + 1].id].runCount)) {
                 aux = fila[j];
@@ -85,7 +91,8 @@ void sortFila (Processo *v) {
                 fila[j + 1] = aux;
             }
         }
-    }
+    } */
+    qsort (fila + iniFila, fimFila - iniFila, sizeof (Processo), compara);
 }
 
 /* Implementação da estrutura usada no SRTN */
