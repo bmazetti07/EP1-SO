@@ -10,7 +10,7 @@
 #include <string.h>
 #include "header.h"
 
-#define maxProcessos 300000 + 7
+#define maxProcessos 300000 + 7                     // Indica o número máximo de processos
 
 // VARIÁVEIS GLOBAIS DESTINADOS
 Processo processos[maxProcessos];                   // Processos lidos do arquivo de trace
@@ -19,7 +19,8 @@ int nProc = 0;                                      // Número de processos tota
 int procAtual = 0;                                  // Processo atuando no momento
 int type = 0;                                       // Tipo do escalonador
 int mudaContexto = 0;                               // Número de mudanças de contexto           
-bool paramD = false;                                // Sinaliza a flag "d" foi solicitada
+bool paramD = false;                                // Sinaliza se a flag "d" foi solicitada
+int deadLineNotCump = 0;
 
 // SEMÁFOROS PARA OS PROCESSOS
 pthread_mutex_t sem[maxProcessos];
@@ -32,7 +33,6 @@ void readFile (char * filename) {
     while (!feof (trace)) {
         if (fscanf (trace, "%s %d %d %d", processos[nProc].nome, &processos[nProc].start, &processos[nProc].dt, &processos[nProc].deadline) != 4)
             continue;
-        // printf ("%s %d %d %d\n", processos[nProc].nome, processos[nProc].start, processos[nProc].dt, processos[nProc].deadline);
         processos[nProc].id = nProc;
         processos[nProc].created = false;
         processos[nProc].finishedDef = false;
@@ -128,6 +128,12 @@ void * fcfs (void * arguments) {
                 pthread_detach (thread);
                 procFinalizados ++;
                 processos[id].tf = relogio;
+
+
+                if (processos[id].tf > processos[id].deadline)
+                    deadLineNotCump ++;
+
+
                 if (paramD)
                     fprintf (stderr, "O processo [%s] finalizou: [tf - %d] | [tr - %d]\n", processos[id].nome, processos[id].tf, processos[id].tf - processos[id].start);
 
@@ -222,7 +228,7 @@ void * srtn (void * arguments) {
             else if (newEntry == true && strcmp (aux.nome, running.nome) != 0) {
                 processos[running.id].finishedOp = true;
 
-                if (processos[running.id].tf != relogio) {
+                if (!processos[running.id].finishedDef && !firstExec) {
                     mudaContexto ++;
                     if (paramD)
                         fprintf (stderr, "Nova mudança de contexto. Total de mudanças até agora: %d\n", mudaContexto);
@@ -261,6 +267,12 @@ void * srtn (void * arguments) {
                 pthread_detach (threads[id]);
                 procFinalizados ++;
                 processos[id].tf = relogio;
+
+
+                if (processos[id].tf > processos[id].deadline)
+                    deadLineNotCump ++;
+
+
                 if (paramD)
                     fprintf (stderr, "O processo [%s] finalizou: [tf - %d] | [tr - %d]\n", processos[id].nome, processos[id].tf, processos[id].tf - processos[id].start);
 
@@ -283,8 +295,6 @@ void * srtn (void * arguments) {
         newEntry = false;
     }
 
-    //mudaContexto --;
-
     freeFila ();
     return NULL;
 }
@@ -293,11 +303,12 @@ void * srtn (void * arguments) {
 void * rr (void * arguments) {
     pthread_t threads[nProc];
     Processo aux;
-    int quantum = 50000;
+    int quantum = 200000;
     int procFinalizados = 0;
     int relogio = 0;
     int cont = 0;
     int interval = 1000000 / quantum;
+    float incremento = (float) quantum / 1000000;
     int id;
 
     createFila (nProc);
@@ -333,7 +344,8 @@ void * rr (void * arguments) {
             if (cont % interval == 0)
                 relogio ++;
 
-            processos[id].runCount += 0.05;
+            processos[id].runCount += incremento;
+            processos[id].runCount = round (processos[id].runCount * 10) / 10;
 
             if ((int) processos[id].runCount >= processos[id].dt) {
                 processos[id].finishedDef = true;
@@ -347,6 +359,9 @@ void * rr (void * arguments) {
                 pthread_detach (threads[id]);
                 procFinalizados ++;
                 processos[id].tf = relogio;
+
+                if (processos[id].tf > processos[id].deadline)
+                    deadLineNotCump ++;
 
                 if (paramD)
                     fprintf (stderr, "O processo [%s] finalizou: [tf - %d] | [tr - %d]\n", processos[id].nome, processos[id].tf, processos[id].tf - processos[id].start);
@@ -421,6 +436,8 @@ int main (int argc, char **argv) {
     escInit (type);
 
     writeFile (argv[3]);
+
+    printf ("Total de processos que não cumpriram a deadline: %d\n", deadLineNotCump);
   
     return 0;
 }

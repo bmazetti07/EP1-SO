@@ -17,10 +17,11 @@ struct processo {
     int deadline;           // Tempo final suposto do processo
 };
 
-#define nProcessos 15
-#define randStart 100
-#define dtRand 10
-#define deadlineRand 10
+#define nProcessos 100
+#define randStart 400
+#define dtRand 20
+#define deadlineRand 40
+#define deadlineFixo 20
 
 Processo processos[nProcessos];
 
@@ -44,7 +45,7 @@ int main () {
     for (int i = 0; i < nProcessos; i ++) {
         processos[i].start = rand() % randStart;
         processos[i].dt = ( rand() % dtRand ) + 1;
-        processos[i].deadline = processos[i].dt + processos[i].start + rand() % deadlineRand;
+        processos[i].deadline = processos[i].dt + processos[i].start + deadlineFixo + rand() % deadlineRand;
     }
 
     sort ();
