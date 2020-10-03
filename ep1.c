@@ -198,21 +198,12 @@ void * srtn (void * arguments) {
             newEntry = true;
         }
 
-        /*
-        printf ("Relogio == %d\n", relogio);
-        printf ("Antes do sort: \n");
-        printFila ();
-        */
-
         if (newEntry) 
             sortFila ();
         if (firstExec && newEntry) {
             running = getIniFila ();
             firstExec = false;
         }
-
-        /* printf ("Depois do sort: \n");
-        printFila (); */
 
         if (!emptyFila ()) {
             aux = getIniFila ();
@@ -221,7 +212,7 @@ void * srtn (void * arguments) {
             if (newEntry == false) {
                 if (strcmp (aux.nome, running.nome) == 0)
                     changed = false;
-                else 
+                else
                     changed = true;
             }
 
@@ -245,10 +236,14 @@ void * srtn (void * arguments) {
 
                 processos[id].created = true;
                 changed = true;
+                running = aux;
             }
 
-            if (changed == true)
+            if (changed == true) {
                 pthread_mutex_unlock (&sem[id]);
+                running = aux;
+                changed = false;
+            }
             
             usleep (1000000);
             relogio ++;
@@ -268,10 +263,8 @@ void * srtn (void * arguments) {
                 procFinalizados ++;
                 processos[id].tf = relogio;
 
-
                 if (processos[id].tf > processos[id].deadline)
                     deadLineNotCump ++;
-
 
                 if (paramD)
                     fprintf (stderr, "O processo [%s] finalizou: [tf - %d] | [tr - %d]\n", processos[id].nome, processos[id].tf, processos[id].tf - processos[id].start);

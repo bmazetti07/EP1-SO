@@ -41,8 +41,6 @@ void queue (Processo proc) {
     fimFila = (fimFila + 1) % tamFila;
 
     nFila ++;
-    /* printf ("queue -> ");
-    printf ("iniFila = %d fimFila = %d\n", iniFila, fimFila); */
 }
 
 Processo dequeue () {
@@ -51,9 +49,6 @@ Processo dequeue () {
     nFila --;
     aux = fila[iniFila];
     iniFila = (iniFila + 1) % tamFila;
-
-    /* printf ("dequeue -> ");
-    printf ("iniFila = %d fimFila = %d\n", iniFila, fimFila); */
 
     return aux;
 }
@@ -86,9 +81,7 @@ void printFila () {
 
 void sortFila () {
     Processo aux;
-
-    /* printf ("Sort -> ");
-    printf ("iniFila = %d fimFila = %d\n", iniFila, fimFila); */
+    
     for (int i = iniFila; i < fimFila; i = (i + 1) % tamFila) {
         for (int j = i + 1; j < fimFila; j = (j + 1) % tamFila) {
             if (fila[i].dt > fila[j].dt) {
