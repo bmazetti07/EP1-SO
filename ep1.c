@@ -129,10 +129,8 @@ void * fcfs (void * arguments) {
                 procFinalizados ++;
                 processos[id].tf = relogio;
 
-
                 if (processos[id].tf > processos[id].deadline)
                     deadLineNotCump ++;
-
 
                 if (paramD)
                     fprintf (stderr, "O processo [%s] finalizou: [tf - %d] | [tr - %d]\n", processos[id].nome, processos[id].tf, processos[id].tf - processos[id].start);
@@ -430,7 +428,5 @@ int main (int argc, char **argv) {
 
     writeFile (argv[3]);
 
-    printf ("Total de processos que não cumpriram a deadline: %d\n", deadLineNotCump);
-  
     return 0;
 }
